@@ -33,7 +33,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
         with:
-          images: ghcr.io/kevinpinscoe/it-tools
+          images: ghcr.io/kevinpinscoe/eng-tools
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -59,4 +59,4 @@ jobs:
       - name: Sign the image
         run: |
           cosign sign --yes \
-            ghcr.io/kevinpinscoe/it-tools@${{ steps.build.outputs.digest }}
+            ghcr.io/kevinpinscoe/eng-tools@${{ steps.build.outputs.digest }}
