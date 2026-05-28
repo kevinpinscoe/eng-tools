@@ -1,6 +1,6 @@
-# IT Tools — Specialized Fork
+# Engineering Tools — Specialized Fork
 
-This repository is a downstream fork of [`CorentinTh/it-tools`](https://github.com/CorentinTh/it-tools).
+**Engineering Tools** (`eng-tools`) is a downstream fork of [`CorentinTh/it-tools`](https://github.com/CorentinTh/it-tools).
 
 The original project, **IT Tools**, is a collection of useful browser-based tools for developers and people working in IT. The original project, design, structure, application framework, and broad tool concept belong to the upstream project and its contributors.
 
@@ -126,6 +126,6 @@ See [`LICENSE`](LICENSE).
 
 ## Modification notice
 
-This repository is a modified downstream fork of `CorentinTh/it-tools`.
+This repository (`eng-tools`) is a modified downstream fork of `CorentinTh/it-tools`.
 
 Modifications in this fork are maintained by Kevin Inscoe and are intended for specialized tools and workflows that may not fit the upstream project's general-purpose scope.
