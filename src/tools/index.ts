@@ -89,6 +89,7 @@ import { tool as xmlFormatter } from './xml-formatter';
 import { tool as yamlViewer } from './yaml-viewer';
 import { tool as hamRadioCalculators } from './ham-radio-calculators';
 import { tool as bitwiseCalculator } from './bitwise-calculator';
+import { tool as ohmsLawCalculator } from './ohms-law-calculator';
 
 export const toolsByCategory: ToolCategory[] = [
   {
@@ -170,7 +171,7 @@ export const toolsByCategory: ToolCategory[] = [
   },
   {
     name: 'Math',
-    components: [mathEvaluator, etaCalculator, percentageCalculator, bitwiseCalculator],
+    components: [mathEvaluator, etaCalculator, percentageCalculator, bitwiseCalculator, ohmsLawCalculator],
   },
   {
     name: 'Measurement',

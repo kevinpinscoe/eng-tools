@@ -401,3 +401,7 @@ tools:
   bitwise-calculator:
     title: Bitwise Calculator
     description: Perform bitwise operations — AND, OR, XOR, NOT, and bit shifts on binary values.
+
+  ohms-law-calculator:
+    title: Ohm's Law Calculator
+    description: Calculate voltage, current, resistance, and power using Ohm's Law.
