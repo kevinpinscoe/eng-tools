@@ -108,27 +108,37 @@ Available tags: `latest` (nightly), semver releases (`v1.2.3`, `1.2`, `1`).
 ## Repository Layout
 
 ```
-it-tools/
+eng-tools/
 ├── .github/
-│   └── workflows/        # ci, e2e-tests, docker nightly/release, releases
-├── _templates/           # Hygen code generation templates (new tool boilerplate)
-├── locales/              # i18n translation files (en, de, es, fr, pt, zh, …)
-├── public/               # Static assets served as-is (icons, robots.txt)
-├── scripts/              # Build and release helper scripts
+│   ├── workflows/            # ci, e2e-tests, docker nightly/release, releases
+│   ├── ISSUE_TEMPLATE/       # GitHub issue templates
+│   └── PULL_REQUEST_TEMPLATE/
+├── _templates/               # Hygen code generation templates (new tool boilerplate)
+├── locales/                  # i18n translation files (en, de, es, fr, pt, zh, …)
+├── public/                   # Static assets served as-is (icons, robots.txt)
+├── scripts/                  # Build and release helper scripts
 ├── src/
-│   ├── components/       # Shared Vue components
-│   ├── composable/       # Vue composables
-│   ├── modules/          # App-level modules (command palette, etc.)
-│   ├── pages/            # Route-level pages
-│   ├── stores/           # Pinia stores
-│   ├── tools/            # Individual tool implementations (one dir per tool)
-│   └── ui/               # UI component library
-├── Dockerfile            # Container image build
-├── nginx.conf            # nginx config used inside the Docker image
+│   ├── assets/               # Images and static assets bundled by Vite
+│   ├── components/           # Shared Vue components
+│   ├── composable/           # Vue composables
+│   ├── layouts/              # Page layout wrappers
+│   ├── modules/              # App-level modules (command palette, etc.)
+│   ├── pages/                # Route-level pages
+│   ├── plugins/              # Vue plugin registrations
+│   ├── stores/               # Pinia stores
+│   ├── tools/                # Individual tool implementations (one dir per tool)
+│   ├── ui/                   # UI component library
+│   └── utils/                # Shared utility functions
+├── CHANGELOG.md
+├── Dockerfile                # Container image build (exposes port 80)
+├── mise.toml                 # Tool version pins (node, pnpm)
+├── nginx.conf                # nginx config used inside the Docker image
 ├── package.json
-├── playwright.config.ts  # E2E test configuration
-├── vite.config.ts        # Build configuration
-└── unocss.config.ts      # UnoCSS (utility CSS) configuration
+├── playwright.config.ts      # E2E test configuration
+├── renovate.json             # Renovate dependency update config
+├── tsconfig.json
+├── unocss.config.ts          # UnoCSS (utility CSS) configuration
+└── vite.config.ts            # Build configuration
 ```
 
 ## License
