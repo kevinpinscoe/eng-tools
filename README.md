@@ -92,6 +92,37 @@ pnpm run script:create:tool my-tool-name
 
 It will create a directory in `src/tools` with the correct files, and the import in `src/tools/index.ts`. You will just need to add the imported tool in the proper category and develop the tool.
 
+## Build Verification
+
+Every production build bakes the last git commit's SHA and timestamp directly into the app. This lets humans and automated checks confirm that what's running on a web server matches the expected build.
+
+### Footer display
+
+The sidebar footer shows the version, short commit SHA (linked to GitHub), and the commit timestamp in UTC:
+
+```
+Eng Tools v1.2.3 · abc1234 · 2026-05-28 21:14 UTC
+```
+
+### Machine-readable endpoint
+
+Every build also emits a `/build-info.json` file served at the root of the site:
+
+```sh
+curl https://<your-host>/build-info.json
+```
+
+```json
+{
+  "version": "1.2.3",
+  "commitSha": "3538ef1708ce7243204be068ebcd566e4cdab6d5",
+  "commitDate": "2026-05-28 21:14:48 -0400",
+  "builtAt": "2026-05-28T21:30:00.000Z"
+}
+```
+
+Use `commitSha` to verify the running build matches the expected git ref, or `builtAt` to confirm deployment freshness. This file is generated at build time and never committed to the repository.
+
 ## Docker
 
 Pre-built images are published to GHCR:

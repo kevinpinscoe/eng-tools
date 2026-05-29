@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { URL, fileURLToPath } from 'node:url';
 
@@ -97,6 +98,23 @@ export default defineConfig({
       resolvers: [NaiveUiResolver(), IconsResolver({ prefix: 'icon' })],
     }),
     Unocss(),
+    {
+      name: 'build-info',
+      generateBundle() {
+        const commitSha = execSync('git log -1 --format="%H"').toString().trim();
+        const commitDate = execSync('git log -1 --format="%ci"').toString().trim();
+        this.emitFile({
+          type: 'asset',
+          fileName: 'build-info.json',
+          source: JSON.stringify({
+            version: process.env.npm_package_version,
+            commitSha,
+            commitDate,
+            builtAt: new Date().toISOString(),
+          }, null, 2),
+        });
+      },
+    },
   ],
   base: baseUrl,
   resolve: {
@@ -106,6 +124,9 @@ export default defineConfig({
   },
   define: {
     'import.meta.env.PACKAGE_VERSION': JSON.stringify(process.env.npm_package_version),
+    'import.meta.env.LAST_COMMIT_DATE': JSON.stringify(
+      execSync('git log -1 --format="%ci"').toString().trim(),
+    ),
   },
   test: {
     exclude: [...configDefaults.exclude, '**/*.e2e.spec.ts'],

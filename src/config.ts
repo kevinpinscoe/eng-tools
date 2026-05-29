@@ -14,6 +14,12 @@ export const config = figue({
       default: '',
       env: 'VITE_VERCEL_GIT_COMMIT_SHA',
     },
+    lastCommitDate: {
+      doc: 'Date and time of the last commit (ISO 8601)',
+      format: 'string',
+      default: '',
+      env: 'LAST_COMMIT_DATE',
+    },
     baseUrl: {
       doc: 'Application base url',
       format: 'string',

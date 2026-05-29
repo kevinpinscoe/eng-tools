@@ -5,6 +5,7 @@ interface ImportMetaEnv {
   VITE_PLAUSIBLE_API_HOST: string;
   VITE_PLAUSIBLE_DOMAIN: string;
   PACKAGE_VERSION: string;
+  LAST_COMMIT_DATE: string;
   GIT_SHORT_SHA: string;
   PROD: boolean;
 }

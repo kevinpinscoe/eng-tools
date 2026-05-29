@@ -34,6 +34,8 @@ coverage
 # Webkit with playwright creates a salt file
 salt
 
+.nvmrc
+
 # Kevin-standard ignores
 **/resume.sh
 **/resume.txt
