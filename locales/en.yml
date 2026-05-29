@@ -421,3 +421,7 @@ tools:
   electrical-power-calculator:
     title: Electrical Power Calculator
     description: Calculate electrical power, voltage, current, and resistance using all standard power formulas (P=VI, P=V²/R, P=I²R).
+
+  rpn-calculator:
+    title: RPN Calculator
+    description: Evaluate Reverse Polish Notation (postfix) expressions with step-by-step stack visualization.

@@ -94,6 +94,7 @@ import { tool as powerFactorCalculator } from './power-factor-calculator';
 import { tool as trigonometryCalculator } from './trigonometry-calculator';
 import { tool as electricalPowerCalculator } from './electrical-power-calculator';
 import { tool as frequencyWavelengthCalculator } from './frequency-wavelength-calculator';
+import { tool as rpnCalculator } from './rpn-calculator';
 
 export const toolsByCategory: ToolCategory[] = [
   {
@@ -175,7 +176,7 @@ export const toolsByCategory: ToolCategory[] = [
   },
   {
     name: 'Math',
-    components: [mathEvaluator, etaCalculator, percentageCalculator, bitwiseCalculator, ohmsLawCalculator, powerFactorCalculator, trigonometryCalculator, electricalPowerCalculator],
+    components: [mathEvaluator, etaCalculator, percentageCalculator, bitwiseCalculator, ohmsLawCalculator, powerFactorCalculator, trigonometryCalculator, electricalPowerCalculator, rpnCalculator],
   },
   {
     name: 'Measurement',
