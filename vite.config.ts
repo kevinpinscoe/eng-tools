@@ -110,8 +110,8 @@ export default defineConfig({
     {
       name: 'build-info',
       generateBundle() {
-        const commitSha = gitExec('%H');
-        const commitDate = gitExec('%ci');
+        const commitSha = process.env.COMMIT_SHA || gitExec('%H');
+        const commitDate = process.env.COMMIT_DATE || gitExec('%ci');
         this.emitFile({
           type: 'asset',
           fileName: 'build-info.json',
@@ -133,7 +133,7 @@ export default defineConfig({
   },
   define: {
     'import.meta.env.PACKAGE_VERSION': JSON.stringify(process.env.npm_package_version),
-    'import.meta.env.LAST_COMMIT_DATE': JSON.stringify(gitExec('%ci')),
+    'import.meta.env.LAST_COMMIT_DATE': JSON.stringify(process.env.COMMIT_DATE || gitExec('%ci')),
   },
   test: {
     exclude: [...configDefaults.exclude, '**/*.e2e.spec.ts'],

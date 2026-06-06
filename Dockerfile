@@ -1,5 +1,7 @@
 # build stage
 FROM node:lts-slim AS build-stage
+ARG COMMIT_SHA=""
+ARG COMMIT_DATE=""
 # Set environment variables for non-interactive npm installs
 ENV NPM_CONFIG_LOGLEVEL warn
 ENV CI true

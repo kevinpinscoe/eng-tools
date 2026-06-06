@@ -85,3 +85,6 @@ jobs:
           push: true
           tags: |
             ghcr.io/kevinpinscoe/eng-tools:nightly
+          build-args: |
+            COMMIT_SHA=${{ github.sha }}
+            COMMIT_DATE=${{ github.event.head_commit.timestamp }}
