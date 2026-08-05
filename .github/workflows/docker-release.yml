@@ -6,9 +6,12 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
 permissions:
-  contents: read
+  # write, not read: the SBOM step creates the GitHub release for the tag if one
+  # does not exist, then uploads the SPDX documents to it
+  contents: write
   packages: write
-  id-token: write   # required for Cosign OIDC
+  id-token: write         # required for Cosign OIDC
+  security-events: write  # required to upload the Grype SARIF report
 
 jobs:
   docker:
@@ -50,6 +53,41 @@ jobs:
             VERSION=${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Bind an SPDX SBOM and SLSA provenance to the pushed digest. Registry
+          # attestations on the manifest list, not files — they need the
+          # docker-container driver and push: true, both already present above.
+          # The Dockerfile's build-stage carries BUILDKIT_SBOM_SCAN_STAGE=true so the
+          # npm dependency graph reaches the attestation; without it this SBOM would
+          # list nginx and Alpine and nothing the app is built from.
+          sbom: true
+          provenance: mode=max
+
+      # Scan the published digest and report. WARN ONLY, deliberately.
+      #
+      # Measured 2026-08-04 before this step existed: 44 findings at or above high
+      # (10 critical, 34 high) out of 90, inherited from the nginx:stable-alpine and
+      # node base images. fail-build: true would have blocked every release from the
+      # first run.
+      #
+      # When the baseline is triaged, flip fail-build to true. Do not raise
+      # severity-cutoff to hide findings, and do not delete the step. A CVE that
+      # genuinely does not affect the image is dispositioned with an OpenVEX
+      # statement at .vex/openvex.json passed to the vex: input.
+      - name: Scan the published image for CVEs
+        id: scan
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        with:
+          image: ghcr.io/kevinpinscoe/eng-tools@${{ steps.build.outputs.digest }}
+          severity-cutoff: high
+          fail-build: false
+          output-format: sarif
+
+      - name: Upload the scan results
+        if: always() && steps.scan.outputs.sarif != ''
+        uses: github/codeql-action/upload-sarif@9e3211c9a3b9311dfe05da2ed48eea3386f042dd # v4.37.6
+        with:
+          sarif_file: ${{ steps.scan.outputs.sarif }}
+          category: grype-container
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
@@ -58,3 +96,45 @@ jobs:
         run: |
           cosign sign --yes \
             ghcr.io/kevinpinscoe/eng-tools@${{ steps.build.outputs.digest }}
+
+      # Export the SBOM attestation as a release record. The registry attestation is
+      # the source of truth; these files are a convenience copy for reading the
+      # inventory without a registry client, and the two can drift.
+      #
+      # The platform key shape is asserted, not assumed: jq -e fails on a missing
+      # path rather than writing null, and a zero-package document is rejected. An
+      # empty SBOM is indistinguishable from a passing one at a glance.
+      - name: Export the SBOM as a release record
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          IMAGE="ghcr.io/kevinpinscoe/eng-tools@${DIGEST}"
+          docker buildx imagetools inspect "$IMAGE" --format '{{ json .SBOM }}' > sbom-raw.json
+
+          echo "SBOM top-level keys:"
+          jq -r 'keys[]' sbom-raw.json
+
+          for plat in linux/amd64 linux/arm64; do
+            out="sbom.${plat//\//-}.spdx.json"
+            jq -e --arg p "$plat" '.[$p].SPDX' sbom-raw.json > "$out" || {
+              echo "::error::no SPDX document at .[\"$plat\"].SPDX — the .SBOM key shape is not what this step expects"
+              exit 1
+            }
+            pkgs=$(jq '.packages | length' "$out")
+            echo "$out: $pkgs packages"
+            [ "$pkgs" -gt 0 ] || { echo "::error::$out is empty"; exit 1; }
+          done
+
+      - name: Attach the SBOM to the GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            echo "No release for $TAG — creating one."
+            gh release create "$TAG" --title "$TAG" --generate-notes
+          fi
+          gh release upload "$TAG" \
+            sbom.linux-amd64.spdx.json sbom.linux-arm64.spdx.json --clobber
