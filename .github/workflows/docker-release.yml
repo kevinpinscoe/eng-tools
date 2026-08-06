@@ -124,7 +124,26 @@ jobs:
             pkgs=$(jq '.packages | length' "$out")
             echo "$out: $pkgs packages"
             [ "$pkgs" -gt 0 ] || { echo "::error::$out is empty"; exit 1; }
+
+            # The build-stage scan lands in its OWN SPDX document under
+            # AdditionalSPDXs; buildkit does not merge it into .SPDX. Exporting only
+            # .SPDX drops the entire npm graph — measured on v2026.08.05, .SPDX held
+            # 72 packages (nginx and Alpine) while the build stage held 1815.
+            n=$(jq --arg p "$plat" '.[$p].AdditionalSPDXs? // [] | length' sbom-raw.json)
+            echo "$plat: $n additional build-stage SPDX document(s)"
+            i=0
+            while [ "$i" -lt "$n" ]; do
+              name=$(jq -r --arg p "$plat" --argjson i "$i" \
+                '.[$p].AdditionalSPDXs[$i].name // "stage\($i)"' sbom-raw.json)
+              aout="sbom.${plat//\//-}.${name}.spdx.json"
+              jq -e --arg p "$plat" --argjson i "$i" \
+                '.[$p].AdditionalSPDXs[$i]' sbom-raw.json > "$aout"
+              echo "$aout: $(jq '.packages | length' "$aout") packages"
+              i=$((i + 1))
+            done
           done
+
+          echo "Exported SBOM documents:"; ls -1 sbom.*.spdx.json
 
       - name: Attach the SBOM to the GitHub release
         env:
@@ -136,5 +155,6 @@ jobs:
             echo "No release for $TAG — creating one."
             gh release create "$TAG" --title "$TAG" --generate-notes
           fi
-          gh release upload "$TAG" \
-            sbom.linux-amd64.spdx.json sbom.linux-arm64.spdx.json --clobber
+          # Glob, not a fixed list: build-stage documents are named after their
+          # stages, so a newly marked stage is picked up without editing this step.
+          gh release upload "$TAG" sbom.*.spdx.json --clobber
