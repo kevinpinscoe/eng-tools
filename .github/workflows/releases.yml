@@ -1,55 +1,32 @@
 name: Release new versions
 
+# Source release only — this workflow does NOT publish container images.
+#
+# It used to. The `docker-release` job it carried was inherited from
+# CorentinTh/it-tools and pushed to `corentinth/it-tools` on both Docker Hub and
+# GHCR — upstream's namespace, not ours — so it failed on every tag since this repo
+# was forked. Removed 2026-08-06 rather than repointed, for two reasons:
+#
+#   1. `docker-release.yml` already publishes ghcr.io/kevinpinscoe/eng-tools on this
+#      same trigger, with an SBOM, SLSA provenance, a Cosign signature and a CVE
+#      scan. Repointing this job would have meant two workflows racing to push the
+#      same tags, one of them signed and attested and one not.
+#   2. We publish to GHCR, not Docker Hub. There is no Docker Hub credential in this
+#      repo and there should not be one.
+#
+# What remains is the source artefact and changelog release.
+
 on:
   push:
     tags:
       - 'v*.*.*'
 
+permissions:
+  contents: write   # softprops/action-gh-release creates and updates the release
+
 jobs:
-  docker-release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Get release version
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
-
-      - name: Checkout
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
-
-      - name: Build and push
-        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            corentinth/it-tools:latest
-            corentinth/it-tools:${{ env.RELEASE_VERSION }}
-            ghcr.io/corentinth/it-tools:latest
-            ghcr.io/corentinth/it-tools:${{ env.RELEASE_VERSION}}
-
   github-release:
     runs-on: ubuntu-latest
-    needs: docker-release
     steps:
       - name: Get release version
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
@@ -71,7 +48,7 @@ jobs:
         run: pnpm build
 
       - name: Zip the app
-        run: zip -r it-tools-${{ env.RELEASE_VERSION }}.zip dist/*
+        run: zip -r eng-tools-${{ env.RELEASE_VERSION }}.zip dist/*
 
       - name: Get changelog
         id: changelog
@@ -81,23 +58,31 @@ jobs:
           node ./scripts/getLatestChangelog.mjs >> $GITHUB_OUTPUT
           echo "$EOF" >> $GITHUB_OUTPUT
 
+      # draft: false, changed from upstream's draft: true.
+      #
+      # docker-release.yml attaches SBOM documents to the release for this same tag,
+      # creating it if it does not exist yet. With two workflows running in parallel
+      # on one tag, a draft flag here made the published/draft state depend on which
+      # finished first — and SBOMs landing on a draft release are invisible until
+      # someone remembers to publish it. Deterministic beats tidy.
       - name: Create Release
         uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          files: it-tools-${{ env.RELEASE_VERSION }}.zip
+          files: eng-tools-${{ env.RELEASE_VERSION }}.zip
           tag_name: v${{ env.RELEASE_VERSION }}
-          draft: true
+          draft: false
           prerelease: false
           body: |
-            ## Docker images
+            ## Container image
 
-            - Docker Hub
-              - `corentinth/it-tools:latest`
-              - `corentinth/it-tools:${{ env.RELEASE_VERSION }}`
-            - GitHub Container Registry
-              - `ghcr.io/corentinth/it-tools:latest`
-              - `ghcr.io/corentinth/it-tools:${{ env.RELEASE_VERSION}}`
+            - `ghcr.io/kevinpinscoe/eng-tools:${{ env.RELEASE_VERSION }}`
+            - `ghcr.io/kevinpinscoe/eng-tools:nightly` — built from `main` daily
+
+            Published by `docker-release.yml` with an SPDX SBOM, SLSA provenance and
+            a Cosign signature bound to the digest. See
+            [SUPPLY-CHAIN.md](https://github.com/kevinpinscoe/eng-tools/blob/main/SUPPLY-CHAIN.md)
+            for how to verify them and what the SBOM does and does not cover.
 
             ## Changelog
 
