@@ -1,4 +1,9 @@
 /* TEAM */
+Maintainer: Kevin P. Inscoe
+Site: https://github.com/kevinpinscoe
+
+/* ORIGINAL PROJECT */
+Engineering Tools is derived from IT Tools.
 Developer: Corentin Thomasset
 Site: https://github.com/CorentinTh
 Twitter: @cthmsst
