@@ -1,30 +1,30 @@
-# Engineering Tools — Specialized Fork
+# Engineering Tools
 
-**Engineering Tools** (`eng-tools`) is a downstream fork of [`CorentinTh/it-tools`](https://github.com/CorentinTh/it-tools).
+**Engineering Tools** (`eng-tools`) is an independent project derived from [`CorentinTh/it-tools`](https://github.com/CorentinTh/it-tools).
 
-The original project, **IT Tools**, is a collection of useful browser-based tools for developers and people working in IT. The original project, design, structure, application framework, and broad tool concept belong to the upstream project and its contributors.
+This repository began as a fork of **IT Tools**, a collection of useful browser-based tools for developers and people working in IT. The original project, design, structure, application framework, and broad tool concept come from the upstream project and its contributors.
 
-## Purpose of this fork
+## Project direction
 
-This fork exists because I like the structure, user experience, and tool format of IT Tools, but I want to add utilities that are more specialized than the general-purpose tools normally expected in the upstream project.
+This project is now maintained as its own repository rather than as a GitHub fork. It keeps the foundation inherited from IT Tools while moving in a more specialized direction.
 
-The tools added here may be useful to a smaller subset of users, such as people with specific infrastructure, operations, homelab, documentation, or workflow needs. They are not necessarily intended to be broadly useful to the wider IT Tools community.
+Tools added here may be useful to a smaller subset of users, such as people with specific infrastructure, operations, homelab, documentation, or workflow needs. They are not necessarily intended to be broadly useful to the wider IT Tools community.
 
-For that reason, I do not intend to submit every tool added here back to the upstream project. This fork should be treated as a separate, opinionated variant rather than a staging area for upstream contributions.
+For that reason, this repository should be treated as a separate, opinionated project rather than a staging area for upstream contributions.
 
-## Relationship to upstream
+## Original project credit
 
-Primary credit goes to the upstream project:
+Engineering Tools would not exist without IT Tools. Primary credit for the original project goes to:
 
 * Upstream repository: [`CorentinTh/it-tools`](https://github.com/CorentinTh/it-tools)
 * Original author: Corentin Thomasset
 * Original project website: [`it-tools.tech`](https://it-tools.tech)
 
-This fork may periodically pull changes from upstream when practical, but it should not be assumed to match upstream behavior, upstream releases, or upstream deployment artifacts.
+This repository is not affiliated with, endorsed by, or maintained by the IT Tools project. It should not be assumed to match upstream behavior, upstream releases, or upstream deployment artifacts.
 
 ## Contributing
 
-Issues and pull requests in this repository should relate to this fork's specialized purpose.
+Issues and pull requests in this repository should relate to this project's specialized purpose.
 
 For general IT Tools bugs, feature requests, or broadly useful tools, consider contributing directly to the upstream project instead:
 
@@ -184,12 +184,12 @@ eng-tools/
 
 ## License
 
-This fork remains licensed under the GNU GPLv3, consistent with the upstream project.
+This project remains licensed under the GNU GPLv3, consistent with the upstream project.
 
 See [`LICENSE`](LICENSE).
 
 ## Modification notice
 
-This repository (`eng-tools`) is a modified downstream fork of `CorentinTh/it-tools`.
+This repository (`eng-tools`) began as a fork of `CorentinTh/it-tools` and is now maintained as an independent project.
 
-Modifications in this fork are maintained by Kevin Inscoe and are intended for specialized tools and workflows that may not fit the upstream project's general-purpose scope.
+Modifications in this repository are maintained by Kevin Inscoe and are intended for specialized tools and workflows that may not fit the upstream project's general-purpose scope.
