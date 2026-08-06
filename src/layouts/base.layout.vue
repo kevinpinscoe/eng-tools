@@ -88,7 +88,7 @@ const tools = computed<ToolCategory[]>(() => [
             </template>
           </div>
           <div>
-            Forked from
+            Derived from
             <c-link target="_blank" rel="noopener" href="https://github.com/CorentinTh/it-tools">
               it-tools
             </c-link>
