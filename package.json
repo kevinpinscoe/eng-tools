@@ -1,11 +1,14 @@
 {
-  "name": "it-tools",
+  "name": "eng-tools",
   "type": "module",
   "version": "2024.10.22-7ca5933",
   "packageManager": "pnpm@9.11.0",
-  "description": "Collection of handy online tools for developers, with great UX. ",
-  "author": "Corentin Th <corentin.thomasset74+it-tools@gmail.com> (https://corentin.tech)",
-  "license": "GNU GPLv3",
+  "description": "Collection of handy online tools for engineers, with great UX.",
+  "author": "Kevin P. Inscoe <kevin.inscoe@gmail.com> (https://kevininscoe.com)",
+  "contributors": [
+    "Corentin Th <corentin.thomasset74+it-tools@gmail.com> (https://corentin.tech) — original author of it-tools, from which this project is derived"
+  ],
+  "license": "GPL-3.0-only",
   "repository": {
     "type": "git",
     "url": "https://github.com/kevinpinscoe/eng-tools"
