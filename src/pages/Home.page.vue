@@ -10,7 +10,7 @@ import { config } from '@/config';
 
 const toolStore = useToolStore();
 
-useHead({ title: 'Eng Tools - Handy online tools for developers' });
+useHead({ title: 'Engineering Tools - Handy online tools for engineers' });
 const { t } = useI18n();
 
 const favoriteTools = computed(() => toolStore.favoriteTools);
@@ -32,14 +32,7 @@ function onUpdateFavoriteTools() {
             rel="noopener"
             target="_blank"
             :aria-label="$t('home.follow.githubRepository')"
-          >GitHub</a>
-          {{ $t('home.follow.p2') }}
-          <a
-            href="https://x.com/ittoolsdottech"
-            rel="noopener"
-            target="_blank"
-            :aria-label="$t('home.follow.twitterXAccount')"
-          >X</a>.
+          >GitHub</a>.
           {{ $t('home.follow.thankYou') }}
           <n-icon :component="IconHeart" />
         </ColoredCard>

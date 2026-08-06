@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconBrandGithub, IconBrandX, IconInfoCircle, IconMoon, IconSun } from '@tabler/icons-vue';
+import { IconBrandGithub, IconInfoCircle, IconMoon, IconSun } from '@tabler/icons-vue';
 import { useStyleStore } from '@/stores/style.store';
 
 const styleStore = useStyleStore();
@@ -17,19 +17,6 @@ const { isDarkTheme } = toRefs(styleStore);
       :aria-label="$t('home.nav.githubRepository')"
     >
       <n-icon size="25" :component="IconBrandGithub" />
-    </c-button>
-  </c-tooltip>
-
-  <c-tooltip :tooltip="$t('home.nav.twitterX')" position="bottom">
-    <c-button
-      circle
-      variant="text"
-      href="https://x.com/ittoolsdottech"
-      rel="noopener"
-      target="_blank"
-      :aria-label="$t('home.nav.twitterXAccount')"
-    >
-      <n-icon size="25" :component="IconBrandX" />
     </c-button>
   </c-tooltip>
 
