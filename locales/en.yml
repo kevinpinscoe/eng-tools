@@ -11,33 +11,31 @@ home:
   support: 'Support IT-Tools development'
   buyMeACoffee: 'Buy them (not me) a coffee'
   follow:
-    title: 'You like it-tools?'
+    title: 'You like Engineering Tools?'
     p1: 'Give us a star on'
-    githubRepository: 'IT-Tools GitHub repository'
-    p2: 'or follow us on'
-    twitterXAccount: 'IT-Tools X account'
+    githubRepository: 'Engineering Tools GitHub repository'
     thankYou: 'Thank you!'
   nav:
     github: 'GitHub repository'
-    githubRepository: 'IT-Tools GitHub repository'
-    twitterX: 'X account'
-    twitterXAccount: 'Eng Tools X account'
-    about: 'About  IT-Tools'
+    githubRepository: 'Engineering Tools GitHub repository'
+    about: 'About Engineering Tools'
     aboutLabel: 'About'
     darkMode: 'Dark mode'
     lightMode: 'Light mode'
     mode: 'Toggle dark/light mode'
 about:
   content: >
-    # About IT-Tools
+    # About Engineering Tools
 
-    This wonderful website, made with ❤ by [Corentin Thomasset](https://corentin.tech?utm_source=it-tools&utm_medium=about) , aggregates useful tools for developer and people working in IT. If you find it useful, please feel free to share it to people you think may find it useful too and don't forget to bookmark it in your shortcut bar!
+    Engineering Tools aggregates useful tools for engineers and people working in IT. Every tool runs entirely in your browser — nothing you type is sent to a server. If you find it useful, please feel free to share it with people you think may find it useful too, and don't forget to bookmark it in your shortcut bar!
 
-    Eng Tools is open-source (under the GPL-3.0 license) and free, and will always be, but it costs me money to host and renew the domain name. If you want to support my work, and encourage me to add more tools, please consider supporting by [sponsoring me](https://www.buymeacoffee.com/cthmsst).
+    This project is derived from [IT Tools](https://github.com/CorentinTh/it-tools), made with ❤ by [Corentin Thomasset](https://corentin.tech?utm_source=eng-tools&utm_medium=about). The original project, its design, and its application framework are their work. Engineering Tools is an independent project and is not affiliated with, endorsed by, or maintained by the IT Tools project. If you would like to support the original author, please consider [buying them a coffee](https://www.buymeacoffee.com/cthmsst).
+
+    Engineering Tools is open-source, under the same GPL-3.0 license as the project it came from, and it is free.
 
     ## Technologies
 
-    Eng Tools is made in Vue.js (Vue 3) with the the Naive UI component library and is hosted and continuously deployed by Vercel. Third-party open-source libraries are used in some tools, you may find the complete list in the [package.json](https://github.com/kevinpinscoe/eng-tools/blob/main/package.json) file of the repository.
+    Engineering Tools is made in Vue.js (Vue 3) with the Naive UI component library. Third-party open-source libraries are used in some tools; you may find the complete list in the [package.json](https://github.com/kevinpinscoe/eng-tools/blob/main/package.json) file of the repository.
 
     ## Found a bug? A tool is missing?
 
