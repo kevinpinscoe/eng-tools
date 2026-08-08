@@ -11,7 +11,8 @@ on:
 permissions:
   contents: read
   packages: write
-  id-token: write   # required for Cosign OIDC — see the signing step below
+  id-token: write         # required for Cosign OIDC — see the signing step below
+  security-events: write  # required to upload the Grype SARIF report
 
 jobs:
   check_date:
@@ -95,6 +96,48 @@ jobs:
           # than a tagged one — if anything it changes more often.
           sbom: true
           provenance: mode=max
+
+      # Scan the published digest. WARN ONLY — and unlike the tagged release, that is
+      # the intended end state here, not a stage on the way to blocking.
+      #
+      # docker-release.yml sets fail-build: true. This workflow deliberately does not,
+      # and the asymmetry is the decision rather than an oversight (Kevin, 2026-08-08):
+      #
+      #   A tagged release is a deliberate act with a human behind it. Blocking is the
+      #   right response — the release does not happen and someone is there to see why.
+      #
+      #   A nightly is unattended and its entire value is freshness. Blocking it means
+      #   a base-image CVE stops :nightly updating while the tag stays pullable, so
+      #   consumers keep receiving an OLDER image and nothing announces that it froze.
+      #   That failure mode is worse than the one blocking prevents.
+      #
+      # Nothing escapes permanently: the same finding blocks the next tagged release,
+      # and every finding lands in the Security tab in the meantime.
+      #
+      # Do not "fix" this to match docker-release.yml.
+      #
+      # Known limitation, tracked as gitops PLAN.md item 11a: Grype resolves a
+      # multi-arch manifest to the runner's own platform, so this covers linux/amd64
+      # only. The arm64 image is built, signed and has its own SBOM but is unscanned.
+      # 11a fixes that across both this workflow and docker-release.yml.
+      - name: Scan the published image for CVEs
+        id: scan
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        with:
+          image: ghcr.io/kevinpinscoe/eng-tools@${{ steps.build.outputs.digest }}
+          severity-cutoff: high
+          fail-build: false
+          output-format: sarif
+
+      # A distinct category from docker-release.yml's "grype-container". Two SARIF
+      # uploads sharing a category overwrite each other in the Security tab, so the
+      # nightly result would silently replace the tagged one or vice versa.
+      - name: Upload the scan results
+        if: always() && steps.scan.outputs.sarif != ''
+        uses: github/codeql-action/upload-sarif@9e3211c9a3b9311dfe05da2ed48eea3386f042dd # v4.37.6
+        with:
+          sarif_file: ${{ steps.scan.outputs.sarif }}
+          category: grype-container-nightly
 
       # This image was published UNSIGNED until 2026-08-04 — the nightly workflow had
       # no Cosign step at all, while the tagged release workflow did. Anyone pulling
