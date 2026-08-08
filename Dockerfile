@@ -23,7 +23,21 @@ COPY . .
 RUN pnpm build
 
 # production stage
-FROM nginx:stable-alpine AS production-stage
+# alpine-slim, not stable-alpine.
+#
+# stable-alpine bundles the optional nginx modules — image-filter, njs, xslt, geoip.
+# image-filter pulls libgd, which pulls tiff, which was this image's only remaining
+# high-severity exposure: CVE-2023-52356 and CVE-2026-4775 in tiff 4.7.1-r0, neither
+# with a fix available, so no rebuild would ever have cleared them.
+#
+# nginx.conf here serves static files and nothing else — a single try_files block, no
+# image_filter, njs, xslt or geoip directive — so none of those modules were ever
+# loaded. alpine-slim omits them and their dependency chain: verified no libtiff and
+# no nginx-module-* packages at all.
+#
+# If a directive from one of those modules is ever added, this must move back to
+# stable-alpine and the tiff findings return as a real exposure.
+FROM nginx:alpine-slim AS production-stage
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80

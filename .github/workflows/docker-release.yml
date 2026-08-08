@@ -62,24 +62,31 @@ jobs:
           sbom: true
           provenance: mode=max
 
-      # Scan the published digest and report. WARN ONLY, deliberately.
+      # Scan the published digest. BLOCKING as of 2026-08-08.
       #
-      # Measured 2026-08-04 before this step existed: 44 findings at or above high
-      # (10 critical, 34 high) out of 90, inherited from the nginx:stable-alpine and
-      # node base images. fail-build: true would have blocked every release from the
-      # first run.
+      # Ran warn-only from 2026-08-04, when the image carried 44 findings at or above
+      # high, later 2 — both libtiff (CVE-2023-52356, CVE-2026-4775) with no fix
+      # available, so no rebuild would ever have cleared them.
       #
-      # When the baseline is triaged, flip fail-build to true. Do not raise
-      # severity-cutoff to hide findings, and do not delete the step. A CVE that
-      # genuinely does not affect the image is dispositioned with an OpenVEX
-      # statement at .vex/openvex.json passed to the vex: input.
+      # They were removed rather than waived. libtiff arrived via
+      # nginx-module-image-filter -> libgd -> tiff, bundled in nginx:stable-alpine.
+      # nginx.conf here is a single try_files block serving static assets, with no
+      # image_filter, njs, xslt or geoip directive, so that module was never loaded.
+      # The production stage moved to nginx:alpine-slim, which omits those modules and
+      # their dependency chain. Measured after: ZERO findings at high or critical.
+      # There is no .vex/openvex.json because nothing needed dispositioning.
+      #
+      # If this starts failing, the finding is real. Fix it, or remove the package, or
+      # — only with evidence the vulnerable code is unreachable — add an OpenVEX
+      # statement and pass it via a vex: input. Do NOT raise severity-cutoff, and do
+      # NOT delete this step.
       - name: Scan the published image for CVEs
         id: scan
         uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
         with:
           image: ghcr.io/kevinpinscoe/eng-tools@${{ steps.build.outputs.digest }}
           severity-cutoff: high
-          fail-build: false
+          fail-build: true
           output-format: sarif
 
       - name: Upload the scan results
