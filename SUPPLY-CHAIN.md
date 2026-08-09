@@ -31,7 +31,8 @@ cosign verify "$IMG" \
   --certificate-identity-regexp='.*' \
   --certificate-oidc-issuer-regexp='.*'
 
-# Known CVEs in the published image
+# Known CVEs in the published image — NOTE: this scans your own platform only.
+# See "Reproducing the scan yourself" below to check the other one.
 grype "$IMG"
 ```
 
@@ -48,23 +49,48 @@ no way to verify who built it. It now signs and attests exactly as the tagged re
 does. A nightly image changes more often than a tagged one, not less, so there was
 never a good reason for it to carry less provenance.
 
-## The CVE gate reports, it does not block
+## The CVE gate — what is checked, and what happens when it trips
 
-`docker-release.yml` scans the pushed digest with Grype at `severity-cutoff: high`,
-uploads the result to the repository's **Security** tab, and does **not** fail the
-build.
+Both workflows scan **each published platform digest** (`linux/amd64` and
+`linux/arm64`) with Grype at `severity-cutoff: high` and upload each result to the
+repository's **Security** tab. What they do with a finding differs on purpose:
 
-Measured 2026-08-04, before the gate was added: **44 findings at or above high** (10
-critical, 34 high) out of 90 total, inherited from the `node:lts-slim` and
-`nginx:stable-alpine` base images. `fail-build: true` would have blocked every
-release from the first run.
+| Image | Workflow | On a finding at or above high |
+|---|---|---|
+| `vX.Y.Z` | `docker-release.yml` | **Blocks.** The release does not publish. |
+| `nightly` | `docker-nightly-release.yml` | **Warns.** The image still publishes; the finding lands in the Security tab. |
 
-When that baseline has been triaged, flip `fail-build` to `true` in
-`docker-release.yml`. Two things not to do instead: do not raise `severity-cutoff` to
-make findings disappear, and do not delete the step. A CVE that genuinely does not
-affect this image is dispositioned with an OpenVEX statement at `.vex/openvex.json`
-passed to the scan step's `vex:` input — there is none today because nothing is being
-blocked.
+**The asymmetry is deliberate — do not "fix" it.** A tagged release is a deliberate act
+with a human behind it, so blocking is the right response: the release simply does not
+happen and someone is there to see why. A nightly is unattended and its entire value is
+freshness. Blocking it would mean a base-image CVE stops `:nightly` updating while the
+tag stays pullable, so consumers keep receiving an *older* image and nothing announces
+that it froze. That failure mode is worse than the one blocking prevents. Nothing
+escapes permanently either way: the same finding blocks the next tagged release.
+
+Note that `fail-build: true` is not a count threshold — one finding at or above the
+cutoff is enough to fail a tagged release.
+
+The tagged gate was not always blocking. Measured 2026-08-04: **44 findings at or above
+high** (10 critical, 34 high) out of 90 total, inherited from the `node:lts-slim` and
+`nginx:stable-alpine` base images, and the gate ran warn-only because blocking would
+have stopped every release from the first run.
+
+Those findings were **removed rather than waived.** The last two were both libtiff
+(CVE-2023-52356, CVE-2026-4775) with no fix available, so no rebuild would ever have
+cleared them. Traced rather than assumed: libtiff arrived via
+`nginx-module-image-filter` → `libgd` → `tiff`, bundled in `nginx:stable-alpine`. This
+repo's `nginx.conf` is a single `try_files` block serving static assets, with no
+`image_filter`, `njs`, `xslt` or `geoip` directive, so that module was shipped and never
+invoked. The production stage moved to `nginx:alpine-slim`, which omits the whole chain.
+The gate became blocking on 2026-08-08.
+
+**Nothing here is suppressed.** There is no `.vex/openvex.json` in this repository, so
+what you measure locally is what the gate measures. If you see a finding at or above
+high, it is real. Two things not to do instead: do not raise `severity-cutoff` to make
+findings disappear, and do not delete a scan step. A CVE that genuinely does not affect
+this image gets an OpenVEX statement at `.vex/openvex.json`, passed to the scan step's
+`vex:` input, and only with evidence that the vulnerable code is unreachable.
 
 ## What the SBOM does not tell you
 
@@ -87,17 +113,60 @@ An SBOM is an inventory, not a clean bill of health. Specific to this image:
 - **Generators disagree.** Two SBOMs of this image, from different tools, will not
   match line for line.
 
-## Known gaps
+## Reproducing the scan yourself
 
-- **Grype scans `linux/amd64` only.** It resolves a multi-arch manifest to the
-  runner's own platform. The `linux/arm64` image is built, signed, and has its own
-  SBOM, but nothing scans it for CVEs.
-- **`:nightly` is not CVE-scanned at all.** The gate is on the tagged release
-  workflow only. A nightly image can therefore regress without anything reporting it.
+`grype "$IMG"` against a multi-arch tag scans **only your own platform**. Grype resolves
+a manifest list to whatever architecture you are running, so an `amd64` machine silently
+never looks at the `arm64` image. To check a specific platform, scan that platform's own
+digest:
+
+```bash
+IMG=ghcr.io/kevinpinscoe/eng-tools:nightly   # or a vX.Y.Z tag
+
+# Your own platform — whatever the manifest list resolves to locally
+grype "$IMG"
+
+# A named platform, by its own digest. Swap arm64 for amd64 for the other one.
+DIGEST=$(docker buildx imagetools inspect --raw "$IMG" \
+  | jq -r '.manifests[] | select(.platform.architecture=="arm64" and .platform.os=="linux") | .digest')
+grype "ghcr.io/kevinpinscoe/eng-tools@${DIGEST}"
+```
+
+This is exactly what both workflows do, so a local run of both platforms should agree
+with the Security tab. The `.platform.os=="linux"` filter matters: a manifest list also
+contains attestation manifests, which report architecture `unknown` and are not
+scannable images.
+
+Four SARIF categories appear in the Security tab, one per image per platform:
+`grype-container-amd64` and `grype-container-arm64` from the tagged release, and
+`grype-container-nightly-amd64` and `grype-container-nightly-arm64` from the nightly.
+They are deliberately distinct — two uploads sharing a category overwrite each other,
+so a shared name would show one result and silently discard the other. A retired
+`grype-container` category may still be visible with stale results from before
+2026-08-08; it is no longer written to.
+
+## Two gaps that are now closed
+
+Recorded because both were real, and both were fixed on 2026-08-08 rather than
+discovered to be harmless:
+
+- **`:nightly` was not CVE-scanned at all** until 2026-08-08. The gate lived only in the
+  tagged release workflow, so a nightly could regress with nothing reporting it — on the
+  image that changes *most* often. It now scans and reports on every run.
+- **Grype scanned `linux/amd64` only** until 2026-08-08, in both workflows, because it
+  resolves a multi-arch manifest to the runner's own platform. The `linux/arm64` image
+  was built, signed and carried its own SBOM, but had never been checked for CVEs. Both
+  workflows now resolve each platform's digest from the manifest list and scan it
+  directly. (`anchore/scan-action` has no platform input, so this could not be fixed
+  with a flag.)
 
 ## Rebuild trigger
 
 A digest's SBOM and CVE posture are frozen at build time and only degrade afterwards.
 Cut a new release when a base image or dependency updates — a scan that was clean six
-months ago says nothing about today. The nightly build partly covers this for `main`,
-but only tagged releases are gated and recorded.
+months ago says nothing about today.
+
+The nightly build covers this continuously for `main`: it rebuilds daily, scans both
+platforms, and records the result in the Security tab. What it does not do is *block*,
+so a nightly finding is a signal to cut a tagged release, not something that stops
+`:nightly` from updating. Only tagged releases are gated.
