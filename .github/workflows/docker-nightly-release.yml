@@ -97,8 +97,38 @@ jobs:
           sbom: true
           provenance: mode=max
 
-      # Scan the published digest. WARN ONLY — and unlike the tagged release, that is
-      # the intended end state here, not a stage on the way to blocking.
+      # Resolve each platform's own digest out of the manifest list.
+      #
+      # steps.build.outputs.digest is the digest of the manifest LIST, and Grype
+      # resolves a manifest list to the RUNNER's platform — so until 2026-08-08 this
+      # scan covered linux/amd64 only, exactly as docker-release.yml did.
+      #
+      # anchore/scan-action has no platform input (read from action.yml at the pinned
+      # SHA, not assumed), so the gap is closed by targeting each platform's own digest.
+      - name: Resolve the per-platform digests
+        id: digests
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          IMAGE="ghcr.io/kevinpinscoe/eng-tools@${DIGEST}"
+          docker buildx imagetools inspect --raw "$IMAGE" > manifest-list.json
+
+          for arch in amd64 arm64; do
+            # os == "linux" also excludes the attestation manifests, which carry
+            # architecture "unknown" and are not scannable images.
+            d=$(jq -r --arg a "$arch" \
+              '.manifests[] | select(.platform.architecture == $a and .platform.os == "linux") | .digest' \
+              manifest-list.json)
+            # An empty digest would reach the scan step as `image: ...@` and fail in a
+            # way that reads like a scanner fault. Fail here, naming the real cause.
+            [ -n "$d" ] || { echo "::error::no linux/$arch manifest in $IMAGE"; exit 1; }
+            echo "$arch=$d" >> "$GITHUB_OUTPUT"
+            echo "linux/$arch -> $d"
+          done
+
+      # Scan each published platform digest. WARN ONLY — and unlike the tagged release,
+      # that is the intended end state here, not a stage on the way to blocking.
       #
       # docker-release.yml sets fail-build: true. This workflow deliberately does not,
       # and the asymmetry is the decision rather than an oversight (Kevin, 2026-08-08):
@@ -116,28 +146,50 @@ jobs:
       #
       # Do not "fix" this to match docker-release.yml.
       #
-      # Known limitation, tracked as gitops PLAN.md item 11a: Grype resolves a
-      # multi-arch manifest to the runner's own platform, so this covers linux/amd64
-      # only. The arm64 image is built, signed and has its own SBOM but is unscanned.
-      # 11a fixes that across both this workflow and docker-release.yml.
-      - name: Scan the published image for CVEs
-        id: scan
+      # The arm64 gap that this comment used to record as a known limitation
+      # (gitops PLAN.md item 11a) is closed as of 2026-08-08 — both platforms are
+      # scanned below. PLAN.md 11a named only the two tagged workflows; this one was
+      # included because it is multi-arch and had the identical gap.
+      - name: Scan the published image for CVEs (linux/amd64)
+        id: scan-amd64
         uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
         with:
-          image: ghcr.io/kevinpinscoe/eng-tools@${{ steps.build.outputs.digest }}
+          image: ghcr.io/kevinpinscoe/eng-tools@${{ steps.digests.outputs.amd64 }}
           severity-cutoff: high
           fail-build: false
           output-format: sarif
 
-      # A distinct category from docker-release.yml's "grype-container". Two SARIF
-      # uploads sharing a category overwrite each other in the Security tab, so the
-      # nightly result would silently replace the tagged one or vice versa.
-      - name: Upload the scan results
-        if: always() && steps.scan.outputs.sarif != ''
+      # Every category here is distinct from every other one in this repo. Two SARIF
+      # uploads sharing a category overwrite each other in the Security tab, so a
+      # nightly result would silently replace a tagged one — or one platform the other.
+      # Four live categories exist: grype-container-{amd64,arm64} from the tagged
+      # release, and grype-container-nightly-{amd64,arm64} from here.
+      #
+      # Each upload sits immediately after its own scan so the report is consumed
+      # before the next scan runs. Do not reorder into scan/scan/upload/upload.
+      - name: Upload the scan results (linux/amd64)
+        if: always() && steps.scan-amd64.outputs.sarif != ''
         uses: github/codeql-action/upload-sarif@9e3211c9a3b9311dfe05da2ed48eea3386f042dd # v4.37.6
         with:
-          sarif_file: ${{ steps.scan.outputs.sarif }}
-          category: grype-container-nightly
+          sarif_file: ${{ steps.scan-amd64.outputs.sarif }}
+          category: grype-container-nightly-amd64
+
+      - name: Scan the published image for CVEs (linux/arm64)
+        id: scan-arm64
+        if: always() && steps.digests.outputs.arm64 != ''
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        with:
+          image: ghcr.io/kevinpinscoe/eng-tools@${{ steps.digests.outputs.arm64 }}
+          severity-cutoff: high
+          fail-build: false
+          output-format: sarif
+
+      - name: Upload the scan results (linux/arm64)
+        if: always() && steps.scan-arm64.outputs.sarif != ''
+        uses: github/codeql-action/upload-sarif@9e3211c9a3b9311dfe05da2ed48eea3386f042dd # v4.37.6
+        with:
+          sarif_file: ${{ steps.scan-arm64.outputs.sarif }}
+          category: grype-container-nightly-arm64
 
       # This image was published UNSIGNED until 2026-08-04 — the nightly workflow had
       # no Cosign step at all, while the tagged release workflow did. Anyone pulling
